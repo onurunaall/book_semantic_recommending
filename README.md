@@ -22,21 +22,3 @@ It uses book metadata and descriptions, applies some filtering and cleanup, then
 
 - **Gradio app**  
   Lets you input a book idea, choose a category and mood, and shows book covers with short summaries.
-
----
-
-## Project Structure
-book_semantic_recommending/
-├── semantic_book_recommender/
-│   ├── data_exploration.py
-│   ├── text_classification.py
-│   ├── sentiment_analysis.py
-│   ├── vector_search.py
-│   ├── gradio_dashboard.py
-│   └── main.py
-├── tests/
-├── setup.py
-├── pyproject.toml
-├── MANIFEST.in
-├── README.md
-└── .github/workflows/ci.yml
