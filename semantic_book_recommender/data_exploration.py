@@ -7,56 +7,79 @@ import pandas as pd
 import kagglehub
 
 def download_dataset() -> str:
-    # Turn off warnings and download the dataset from Kaggle
+    """Download the 7k-books-with-metadata dataset and return its directory path."""
     warnings.filterwarnings("ignore")
-    dataset_dir: str = kagglehub.dataset_download("dylanjcastillo/7k-books-with-metadata")
-    return dataset_dir
+    dataset_path = kagglehub.dataset_download("dylanjcastillo/7k-books-with-metadata")
+    return dataset_path
 
 def load_books(dataset_dir: str) -> pd.DataFrame:
-    # Build the path to the CSV file and load it into a DataFrame
-    csv_path: str = os.path.join(dataset_dir, "books.csv")
+    """Load the books CSV file into a DataFrame."""
+    csv_path = os.path.join(dataset_dir, "books.csv")
     return pd.read_csv(csv_path)
 
+def combine_title_and_subtitle(row: pd.Series) -> str | float:
+    """Combine title and subtitle columns, handling NaN cases gracefully."""
+    title = row["title"]
+    subtitle = row["subtitle"]
+
+    if pd.isna(title) and pd.isna(subtitle):
+        return np.nan
+    if pd.isna(subtitle):
+        return title
+    if pd.isna(title):
+        return subtitle
+    return f"{title}: {subtitle}"
+
 def clean_books_data(raw_books: pd.DataFrame) -> pd.DataFrame:
-    # Flag rows with missing descriptions and compute the age of each book
-    raw_books["missing_description"] = np.where(raw_books["description"].isna(), 1, 0)
-    raw_books["age_of_book"] = 2024 - raw_books["published_year"]
+    """Clean the raw books DataFrame and return a filtered DataFrame with required columns."""
+    # Mark rows with missing descriptions
+    raw_books["missing_description"] = raw_books["description"].isna().astype(int)
 
-    # Remove rows missing any essential field
-    complete_books: pd.DataFrame = raw_books[
-        ~(raw_books["description"].isna()) &
-        ~(raw_books["num_pages"].isna()) &
-        ~(raw_books["average_rating"].isna()) &
-        ~(raw_books["published_year"].isna())
-    ].copy()
+    # Calculate the age of each book
+    current_year = pd.to_datetime("today").year
+    raw_books["age_of_book"] = current_year - raw_books["published_year"]
 
-    # Count words in each description and retain only rows with at least 25 words
+    # Keep only rows with all essential fields present
+    has_all_fields = (
+        raw_books["description"].notna() &
+        raw_books["num_pages"].notna() &
+        raw_books["average_rating"].notna() &
+        raw_books["published_year"].notna()
+    )
+    complete_books = raw_books[has_all_fields].copy()
+
+    # Add a word count for descriptions
     complete_books["words_in_description"] = complete_books["description"].str.split().str.len()
-    valid_books: pd.DataFrame = complete_books[complete_books["words_in_description"] >= 25].copy()
 
-    # Combine title and subtitle if the subtitle exists; otherwise, use the title
-    valid_books["title_and_subtitle"] = np.where(
-        valid_books["subtitle"].isna(),
-        valid_books["title"],
-        valid_books[["title", "subtitle"]].astype(str).agg(": ".join, axis=1)
-    )
+    # Only keep books with at least 25 words in their description
+    enough_words = complete_books["words_in_description"] >= 25
+    valid_books = complete_books[enough_words].copy()
 
-    # Create a tagged description by concatenating the ISBN and the description
-    valid_books["tagged_description"] = valid_books[["isbn13", "description"]].astype(str).agg(" ".join, axis=1)
+    # Combine title and subtitle safely
+    valid_books["title_and_subtitle"] = valid_books.apply(combine_title_and_subtitle, axis=1)
 
-    # Remove helper columns no longer needed
-    final_books: pd.DataFrame = valid_books.drop(
-        ["subtitle", "missing_description", "age_of_book", "words_in_description"],
-        axis=1
-    )
+    # Add a tagged description column (ISBN + description)
+    valid_books["tagged_description"] = valid_books[["isbn13", "description"]].agg(" ".join, axis=1)
 
-    return final_books
+    # Remove helper columns
+    columns_to_drop = ["subtitle", "missing_description", "age_of_book", "words_in_description"]
+    cleaned_books = valid_books.drop(columns=columns_to_drop)
+
+    return cleaned_books
 
 def main() -> None:
     print("Downloading and cleaning the 7k books dataset...")
-    dataset_dir: str = download_dataset()
-    raw_books: pd.DataFrame = load_books(dataset_dir)
-    cleaned_books: pd.DataFrame = clean_books_data(raw_books)
+
+    # Download data
+    dataset_dir = download_dataset()
+
+    # Load data
+    raw_books = load_books(dataset_dir)
+
+    # Clean data
+    cleaned_books = clean_books_data(raw_books)
+
+    # Save cleaned data to CSV
     cleaned_books.to_csv("books_cleaned.csv", index=False)
     print("Cleaned dataset saved as 'books_cleaned.csv'.")
 
