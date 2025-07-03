@@ -13,14 +13,18 @@ from langchain_chroma import Chroma
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise EnvironmentError("OPENAI_API_KEY not set; please export it before running.")
+    raise EnvironmentError(
+        "OPENAI_API_KEY not set; please export it before running."
+    )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def load_books() -> pd.DataFrame:
     """Load the cleaned books CSV into a DataFrame."""
     return pd.read_csv("books_cleaned.csv")
+
 
 def save_tagged_descriptions(
     books_df: pd.DataFrame,
@@ -34,6 +38,7 @@ def save_tagged_descriptions(
         output_file, sep="\n", index=False, header=False
     )
 
+
 def create_vector_store(text_file: str = "tagged_description.txt") -> Chroma:
     """
     Create a Chroma vector store from a file of tagged descriptions.
@@ -41,11 +46,14 @@ def create_vector_store(text_file: str = "tagged_description.txt") -> Chroma:
     # Load raw documents from the text file
     raw_docs = TextLoader(text_file).load()
     # Split each document by newline; no overlap, no chunking
-    splitter = CharacterTextSplitter(chunk_size=0, chunk_overlap=0, separator="\n")
+    splitter = CharacterTextSplitter(
+        chunk_size=0, chunk_overlap=0, separator="\n"
+    )
     docs = splitter.split_documents(raw_docs)
     # Build the vector store using OpenAI embeddings
     vector_store = Chroma.from_documents(docs, OpenAIEmbeddings())
     return vector_store
+
 
 def retrieve_semantic_recommendations(
     query: str,
@@ -72,6 +80,7 @@ def retrieve_semantic_recommendations(
     matched_books = books_df[books_df["isbn13"].isin(isbns)]
     return matched_books
 
+
 def main() -> None:
     logger.info("Loading books and saving tagged descriptions.")
     books_df = load_books()
@@ -88,6 +97,7 @@ def main() -> None:
     logger.info("Example recommendations:")
     for title in recs["title"]:
         logger.info("  - %s", title)
+
 
 if __name__ == "__main__":
     main()
