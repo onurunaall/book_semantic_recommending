@@ -1,30 +1,41 @@
 #!/usr/bin/env python3
 
-from data_exploration import download_dataset, load_books, clean_books_data
-from text_classification import classify_categories
-from sentiment_analysis import process_books
-from vector_search import save_tagged_descriptions
+import logging
+
+from data_exploration import (
+    clean_books_data,
+    download_dataset,
+    load_books,
+)
 from gradio_dashboard import launch_dashboard
+from sentiment_analysis import process_books
+from text_classification import classify_categories
+from vector_search import save_tagged_descriptions
+
 
 def main() -> None:
-    print("Downloading and cleaning the dataset...")
-    dataset_path = download_dataset()
-    raw_books_df = load_books(dataset_path)
-    cleaned_books_df = clean_books_data(raw_books_df)
+    """Run full pipeline and then launch the dashboard."""
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 
-    print("Classifying book categories...")
-    books_with_categories_df = classify_categories(cleaned_books_df)
+    logger.info("Downloading and cleaning dataset...")
+    path = download_dataset()
+    raw = load_books(path)
+    cleaned = clean_books_data(raw)
 
-    print("Computing emotion scores for each book...")
-    books_with_emotions_df = process_books(books_with_categories_df)
+    logger.info("Classifying categories...")
+    with_categories = classify_categories(cleaned)
 
-    print("Saving final processed data and tagged descriptions...")
-    books_with_emotions_df.to_csv("books_with_emotions.csv", index=False)
-    save_tagged_descriptions(cleaned_books_df)
-    print("  → 'books_with_emotions.csv' and 'tagged_description.txt' created.")
+    logger.info("Analyzing emotions...")
+    with_emotions = process_books(with_categories)
 
-    print("Launching the Gradio Dashboard...")
+    logger.info("Saving outputs...")
+    with_emotions.to_csv("books_with_emotions.csv", index=False)
+    save_tagged_descriptions(cleaned)
+
+    logger.info("Launching dashboard...")
     launch_dashboard()
+
 
 if __name__ == "__main__":
     main()
