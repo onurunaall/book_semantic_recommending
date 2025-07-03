@@ -68,12 +68,10 @@ def predict_missing_categories(
     descs = missing["description"].tolist()
 
     try:
-        preds = classifier(
-            descs, candidate_labels=["Fiction", "Nonfiction"]
-        )
+        preds = classifier(descs, candidate_labels=["Fiction", "Nonfiction"])
     except Exception as err:
         logger.error("Zero-shot failed: %s", err)
-        preds = [{} for _ in descs]
+        raise
 
     labels: list[Any] = []
     for i, p in enumerate(preds):
