@@ -57,14 +57,12 @@ def clean_books_data(raw_books: pd.DataFrame) -> pd.DataFrame:
     complete["words_in_description"] = (
         complete["description"].str.split().str.len()
     )
+    
+    valid=complete[complete["words_in_description"]>=25].copy()
+    
+    valid["title_and_subtitle"]=valid.apply(combine_title_and_subtitle,axis=1)
 
-    valid = complete[complete["words_in_description"] >= 25].copy()
-
-    valid["title_and_subtitle"] = valid.apply(combine_title_and_subtitle, axis=1)
-
-    valid["tagged_description"] = valid[
-        ["isbn13", "description"]
-    ].agg(" ".join, axis=1)
+    valid["tagged_description"] = valid[["isbn13", "description"]].agg(" ".join, axis=1)
 
     drop_cols = [
         "subtitle",
