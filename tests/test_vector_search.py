@@ -1,10 +1,13 @@
 import pandas as pd
-import pytest
-from semantic_book_recommender.vector_search import retrieve_semantic_recommendations
+from semantic_book_recommender.vector_search import (
+    retrieve_semantic_recommendations
+)
+
 
 class DummyDocument:
     def __init__(self, page_content):
         self.page_content = page_content
+
 
 class DummyVectorStore:
     def similarity_search(self, query, k):
@@ -12,6 +15,7 @@ class DummyVectorStore:
             DummyDocument('"1111111111111 extra text"'),
             DummyDocument('"2222222222222 extra text"')
         ]
+
 
 def test_retrieve_semantic_recommendations():
     df = pd.DataFrame({
