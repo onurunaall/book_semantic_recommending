@@ -75,16 +75,17 @@ def predict_missing_categories(
 
     labels: list[Any] = []
     for i, p in enumerate(preds):
-        try:
-            lbls = p.get("labels", [])
-            scores = p.get("scores", [])
-            if lbls and scores:
+        lbls = p.get("labels", [])
+        scores = p.get("scores", [])
+        
+        if lbls and scores:
+            try:
                 idx = int(np.nanargmax(scores))
                 labels.append(lbls[idx])
-            else:
+            except ValueError:
+                logger.error("Could not find max score in prediction %d", i)
                 labels.append(None)
-        except Exception as err:
-            logger.error("Error parsing pred %d: %s", i, err)
+        else:
             labels.append(None)
 
     return pd.DataFrame({
