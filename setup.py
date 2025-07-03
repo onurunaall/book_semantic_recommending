@@ -15,10 +15,10 @@ setuptools.setup(
         "numpy==1.26.4",
         "pandas==2.2.3",
         "kagglehub==0.3.5",
-        "gradio==5.9.1",
+        "gradio>=5.0.0",
         "python-dotenv==1.0.1",
         "langchain==0.3.12",
-        "langchain-chroma==0.1.4",
+        "langchain-chroma>=0.1.5",
         "langchain-community==0.3.12",
         "langchain-openai==0.2.12",
         "langchain-text-splitters==0.3.3",
@@ -28,7 +28,15 @@ setuptools.setup(
         "tqdm==4.67.1",
         "nltk"
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.10',
+    extras_require={
+        "dev": [
+            "pytest",
+            "flake8",
+            "coverage",
+            "codecov"
+        ]
+    },
     entry_points={
         "console_scripts": [
             "semantic-book-recommender=semantic_book_recommender.main:main",
