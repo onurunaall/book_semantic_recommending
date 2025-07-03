@@ -22,7 +22,7 @@ setuptools.setup(
         "langchain-community==0.3.12",
         "langchain-openai==0.2.12",
         "langchain-text-splitters==0.3.3",
-        "chromadb==0.5.23",
+        "chromadb==0.5.4",
         "transformers==4.47.1",
         "torch==2.5.1",
         "tqdm==4.67.1",
