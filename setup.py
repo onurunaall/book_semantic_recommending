@@ -26,6 +26,7 @@ setuptools.setup(
         "transformers==4.47.1",
         "torch==2.5.1",
         "tqdm==4.67.1",
+        "nltk"
     ],
     python_requires='>=3.7',
     entry_points={
