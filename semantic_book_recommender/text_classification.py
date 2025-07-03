@@ -77,7 +77,6 @@ def predict_missing_categories(
     for i, p in enumerate(preds):
         lbls = p.get("labels", [])
         scores = p.get("scores", [])
-        
         if lbls and scores:
             try:
                 idx = int(np.nanargmax(scores))
@@ -85,6 +84,7 @@ def predict_missing_categories(
             except ValueError:
                 logger.error("Could not find max score in prediction %d", i)
                 labels.append(None)
+
         else:
             labels.append(None)
 
