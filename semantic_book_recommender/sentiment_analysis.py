@@ -73,7 +73,7 @@ def process_books(
     records = []
     idx = 0
     for isbn, group in zip(books_df["isbn13"], sentence_lists):
-        preds = all_preds[idx : idx + len(group)]
+        preds = all_preds[idx:(idx + len(group))]
         idx += len(group)
         max_scores = calculate_max_emotion_scores(preds)
         max_scores["isbn13"] = isbn
