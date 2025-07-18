@@ -1,45 +1,23 @@
-#!/usr/bin/env python3
-import setuptools
+from setuptools import setup, find_packages
 
-setuptools.setup(
+setup(
     name="semantic-book-recommender",
     version="0.1.0",
-    author="Onur Ünal",
-    author_email="upklw@student.kit.edu",
-    description="A semantic book recommender system with data cleaning, classification, sentiment analysis, and a Gradio dashboard.",
-    long_description=open("README.md", encoding="utf-8").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/onurunaall/book_semantic_recommending",
-    packages=setuptools.find_packages(),
+    packages=find_packages(),
     install_requires=[
-        "numpy",
-        "pandas",
-        "kagglehub",
-        "gradio",
-        "python-dotenv",
-        "nltk",
-        "tqdm",
-        "langchain>=0.2.0",
-        "langchain-community>=0.2.0",
-        "langchain-chroma>=0.1.1",
-        "langchain-openai>=0.1.0",
-        "langchain-text-splitters>=0.2.0",
-        "chromadb>=0.5.0",
-        "transformers>=4.40.0",
-        "torch",
+        "pandas~=2.0.0",
+        "numpy~=1.24.0",
+        "transformers~=4.36.0",
+        "torch~=2.1.0",
+        "nltk~=3.8.0",
+        "gradio~=4.0.0",
+        "langchain~=0.2.0",
+        "langchain-community~=0.2.0",
+        "langchain-openai~=0.1.0",
+        "langchain-chroma~=0.1.0",
+        "chromadb~=0.4.0",
+        "python-dotenv~=1.0.0",
+        "kagglehub~=0.2.0",
     ],
-    python_requires='>=3.10',
-    extras_require={
-        "dev": [
-            "pytest",
-            "flake8",
-            "coverage",
-            "codecov"
-        ]
-    },
-    entry_points={
-        "console_scripts": [
-            "semantic-book-recommender=semantic_book_recommender.main:main",
-        ],
-    },
+    python_requires=">=3.10",
 )
