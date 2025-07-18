@@ -51,6 +51,7 @@ def calculate_max_emotion_scores(
 def process_books(
     classifier: Pipeline,
     books_df: pd.DataFrame,
+    batch_size: int = 128,
 ) -> pd.DataFrame:
     """
     Batch-process all descriptions, compute max emotion scores,
@@ -63,12 +64,22 @@ def process_books(
         s for group in sentence_lists for s in group
     ]
 
-    logger.info("Classifying %d sentences", len(all_sents))
-    try:
-        all_preds = classifier(all_sents)
-    except Exception as err:
-        logger.error("Batch classification failed: %s", err)
-        all_preds = [[] for _ in all_sents]
+    logger.info("Classifying %d sentences in batches of %d", len(all_sents), batch_size)
+    
+    # Process sentences in batches
+    all_preds = []
+    for i in range(0, len(all_sents), batch_size):
+        batch = all_sents[i:i + batch_size]
+        try:
+            batch_preds = classifier(batch)
+            all_preds.extend(batch_preds)
+        except Exception as err:
+            logger.warning(
+                "Batch classification failed for batch %d-%d: %s",
+                i, i + len(batch), err
+            )
+            # Add empty predictions for failed batch
+            all_preds.extend([[] for _ in batch])
 
     records = []
     idx = 0
@@ -80,11 +91,3 @@ def process_books(
         records.append(max_scores)
 
     return pd.DataFrame.from_records(records)
-
-
-if __name__ == "__main__":
-    df = pd.read_csv("books_with_categories.csv")
-    clf = initialize_classifier()
-    result = process_books(clf, df)
-    merged = df.merge(result, on="isbn13")
-    merged.to_csv("books_with_emotions.csv", index=False)
