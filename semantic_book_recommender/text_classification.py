@@ -70,8 +70,12 @@ def predict_missing_categories(
     try:
         preds = classifier(descs, candidate_labels=["Fiction", "Nonfiction"])
     except Exception as err:
-        logger.error("Zero-shot failed: %s", err)
-        raise
+        logger.error("Zero-shot classification failed: %s", err)
+        # Return DataFrame with None values for all predictions
+        return pd.DataFrame({
+            "isbn13": missing["isbn13"],
+            "predicted_categories": [None] * len(missing),
+        })
 
     labels: list[Any] = []
     for i, p in enumerate(preds):
@@ -104,15 +108,3 @@ def classify_categories(books_df: pd.DataFrame) -> pd.DataFrame:
         df["predicted_categories"]
     )
     return df.drop(columns=["predicted_categories"])
-
-
-def main() -> None:
-    """Run classification and save to disk."""
-    df = load_books()
-    df = classify_categories(df)
-    df.to_csv("books_with_categories.csv", index=False)
-    logger.info("Saved 'books_with_categories.csv'.")
-
-
-if __name__ == "__main__":
-    main()
