@@ -40,14 +40,9 @@ def save_tagged_descriptions(
 
 
 def create_vector_store(
-    text_file: str = "tagged_description.txt"
+    docs: list
 ) -> Chroma:
-    """Build Chroma store from a tagged-descriptions file."""
-    raw = TextLoader(text_file).load()
-    splitter = CharacterTextSplitter(
-        separator="\n", chunk_size=0, chunk_overlap=0
-    )
-    docs = splitter.split_documents(raw)
+    """Build Chroma store from a list of documents in memory."""
     return Chroma.from_documents(docs, OpenAIEmbeddings())
 
 
@@ -55,13 +50,19 @@ def retrieve_semantic_recommendations(
     query: str,
     books_df: pd.DataFrame,
     vector_store: Chroma,
-    search_k: int = 50
+    category: str | None = None,
+    tone: str | None = None,
+    search_k: int = 50,
+    final_k: int = 16,
 ) -> pd.DataFrame:
     """
     Search the vector store, extract ISBNs safely,
-    and return matching rows from books_df.
+    and return matching rows from books_df with optional filtering.
     """
+    # Search vector store
     results = vector_store.similarity_search(query, k=search_k)
+    
+    # Extract ISBNs
     isbns: list[int] = []
     for doc in results:
         content = doc.page_content.strip('"')
@@ -70,21 +71,26 @@ def retrieve_semantic_recommendations(
             isbns.append(int(parts[0]))
         except (IndexError, ValueError):
             logger.warning("Skipping malformed result: %r", content)
-    return books_df[books_df["isbn13"].isin(isbns)]
-
-
-def main() -> None:
-    """Demo: build store and run one example query."""
-    df = load_books()
-    save_tagged_descriptions(df)
-    store = create_vector_store()
-
-    query = "A book to teach children about nature"
-    recs = retrieve_semantic_recommendations(query, df, store)
-    logger.info("Example recommendations:")
-    for title in recs["title"]:
-        logger.info("  - %s", title)
-
-
-if __name__ == "__main__":
-    main()
+    
+    # Get matching books
+    recs = books_df[books_df["isbn13"].isin(isbns)]
+    
+    # Apply category filter
+    if category and category != "All":
+        recs = recs[recs["simple_categories"] == category]
+    
+    # Apply tone-based sorting FIRST
+    tone_map = {
+        "Happy": "joy",
+        "Surprising": "surprise",
+        "Angry": "anger",
+        "Suspenseful": "fear",
+        "Sad": "sadness",
+    }
+    if tone in tone_map:
+        emotion_column = tone_map[tone]
+        if emotion_column in recs.columns:
+            recs = recs.sort_values(by=emotion_column, ascending=False)
+    
+    # THEN, limit to the final number of recommendations
+    return recs.head(final_k)
