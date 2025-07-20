@@ -8,7 +8,7 @@ setup(
         "pandas~=2.0.0",
         "numpy>=1.26.0",
         "transformers~=4.36.0",
-        "torch~=2.1.0",
+        "torch>=2.2.0",
         "nltk~=3.8.0",
         "gradio~=4.0.0",
         "langchain~=0.2.0",
