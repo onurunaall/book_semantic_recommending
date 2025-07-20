@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pandas~=2.0.0",
-        "numpy~=1.24.0",
+        "numpy>=1.26.0",
         "transformers~=4.36.0",
         "torch~=2.1.0",
         "nltk~=3.8.0",
