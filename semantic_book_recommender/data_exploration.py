@@ -93,17 +93,3 @@ def clean_books_data(raw_books: pd.DataFrame) -> pd.DataFrame:
     final_books = valid_books.drop(columns=drop_cols)
 
     return final_books
-
-
-def main() -> None:
-    """Download, clean, and save the books dataset."""
-    print("Downloading and cleaning the 7k books dataset...")
-    dataset_dir = download_dataset()
-    raw = load_books(dataset_dir)
-    cleaned = clean_books_data(raw)
-    cleaned.to_csv("books_cleaned.csv", index=False)
-    print("Cleaned dataset saved as 'books_cleaned.csv'.")
-
-
-if __name__ == "__main__":
-    main()
