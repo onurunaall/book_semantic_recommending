@@ -2,11 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 import pandas as pd
 
-from semantic_book_recommender.vector_search import (
-    retrieve_semantic_recommendations,
-    save_tagged_descriptions,
-    create_vector_store
-)
+from semantic_book_recommender.vector_search import retrieve_semantic_recommendations, create_vector_store
 
 
 class TestVectorSearch(unittest.TestCase):
