@@ -12,11 +12,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def load_books() -> pd.DataFrame:
-    """Load cleaned books CSV."""
-    return pd.read_csv("books_cleaned.csv")
-
-
 def map_categories(books_df: pd.DataFrame) -> pd.DataFrame:
     """Map detailed categories to simplified ones."""
     mapping = {
