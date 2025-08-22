@@ -2,6 +2,8 @@
 
 import os
 import warnings
+from datetime import datetime
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -11,85 +13,118 @@ import kagglehub
 def download_dataset() -> str:
     """Download the 7k-books-with-metadata dataset and return its directory."""
     warnings.filterwarnings("ignore")
-    return kagglehub.dataset_download(
-        "dylanjcastillo/7k-books-with-metadata"
-    )
+    return kagglehub.dataset_download("dylanjcastillo/7k-books-with-metadata")
 
 
 def load_books(dataset_dir: str) -> pd.DataFrame:
     """Load books CSV into a DataFrame."""
+    if not os.path.exists(dataset_dir):
+        raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
+    
     csv_path = os.path.join(dataset_dir, "books.csv")
-    return pd.read_csv(csv_path)
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Books CSV not found: {csv_path}")
+    
+    try:
+        return pd.read_csv(csv_path)
+    except Exception as e:
+        raise ValueError(f"Failed to load books CSV: {e}")
 
 
-def combine_title_and_subtitle(row: pd.Series) -> str | float:
+def combine_title_and_subtitle(row: pd.Series) -> Optional[str]:
     """Combine title and subtitle, handling NaN cases."""
-    title = row["title"]
-    subtitle = row["subtitle"]
+    title, subtitle = row["title"], row["subtitle"]
+    
     if pd.isna(title) and pd.isna(subtitle):
-        return np.nan
+        return None
     if pd.isna(subtitle):
-        return title
+        return str(title)
     if pd.isna(title):
-        return subtitle
-    return f"{title}: {subtitle}"
+        return str(subtitle)
+    
+    return f"{str(title)}: {str(subtitle)}"
 
 
-def clean_books_data(raw_books: pd.DataFrame) -> pd.DataFrame:
-    """Clean raw books and return a filtered DataFrame."""
-    # mark missing descriptions
-    raw_books["missing_description"] = np.where(
-        raw_books["description"].isna(),
-        1,
-        0,
+def filter_complete_books(df: pd.DataFrame) -> pd.DataFrame:
+    """Filter out books with missing essential fields."""
+    required = ["description", "num_pages", "average_rating", "published_year"]
+    missing = [col for col in required if col not in df.columns]
+    
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
+    
+    # Build a mask: keep rows with all required fields present
+    mask = df["description"].notna()
+    for col in required[1:]:
+        mask &= df[col].notna()
+    
+    result = df[mask].copy()
+    if result.empty:
+        raise ValueError("No books remain after filtering for complete data")
+    
+    return result
+
+
+def filter_by_description_length(
+    df: pd.DataFrame,
+    min_words: int = 25
+) -> pd.DataFrame:
+    """Filter books by minimum description word count."""
+    if "description" not in df.columns:
+        raise ValueError("DataFrame must contain 'description' column")
+    
+    df = df.copy()
+    df["words_in_description"] = (
+        df["description"].astype(str).str.split().str.len()
     )
-    # compute book age using current year
-    raw_books["age_of_book"] = (
-        pd.to_datetime("today").year
-        - raw_books["published_year"]
-    )
+    
+    result = df[df["words_in_description"] >= min_words].copy()
+    if result.empty:
+        raise ValueError(f"No books remain with descriptions >= {min_words} words")
+    
+    return result.drop(columns=["words_in_description"])
 
-    # filter out rows missing essential fields
-    mask = (
-        raw_books["description"].notna()
-        & raw_books["num_pages"].notna()
-        & raw_books["average_rating"].notna()
-        & raw_books["published_year"].notna()
-    )
-    complete_books = raw_books[mask].copy()
 
-    # count words in each description
-    complete_books["words_in_description"] = (
-        complete_books["description"]
-        .str.split()
-        .str.len()
-    )
-
-    # keep only books with at least 25 words
-    valid_books = complete_books[
-        complete_books["words_in_description"] >= 25
-    ].copy()
-
-    # combine title and subtitle safely
-    valid_books["title_and_subtitle"] = valid_books.apply(
+def add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Add combined title/subtitle and tagged description."""
+    if df.empty:
+        raise ValueError("Cannot process empty DataFrame")
+    
+    result = df.copy()
+    result["title_and_subtitle"] = result.apply(
         combine_title_and_subtitle,
         axis=1,
     )
-
-    # tag description with ISBN
-    valid_books["tagged_description"] = (
-        valid_books[["isbn13", "description"]]
+    result["tagged_description"] = (
+        result[["isbn13", "description"]]
         .astype(str)
         .agg(" ".join, axis=1)
     )
+    
+    return result
 
-    # drop helper columns
-    drop_cols = [
-        "subtitle",
-        "missing_description",
-        "age_of_book",
-        "words_in_description",
-    ]
-    final_books = valid_books.drop(columns=drop_cols)
 
-    return final_books
+def clean_books_data(
+    raw_books: pd.DataFrame,
+    min_description_words: int = 25
+) -> pd.DataFrame:
+    """
+    Clean raw books data and return a filtered DataFrame.
+    
+    Steps:
+      1. Remove rows missing essential fields
+      2. Filter by description word count
+      3. Add derived columns
+      4. Drop redundant subtitle column
+    """
+    if raw_books.empty:
+        raise ValueError("Input DataFrame is empty")
+    
+    books = filter_complete_books(raw_books)
+    books = filter_by_description_length(books, min_description_words)
+    books = add_derived_columns(books)
+    
+    if "subtitle" in books.columns:
+        books = books.drop(columns=["subtitle"])
+    
+    return books
